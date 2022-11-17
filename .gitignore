@@ -1,1 +1,5 @@
 mlruns
+xgbmodels
+.env
+__pycache__/
+*.pkl

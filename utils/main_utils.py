@@ -51,17 +51,25 @@ def df_spliter_into_train_test(df, documenttype_section):
     print("train - test split completed")
     return X_train, y_train, X_test, y_test
 
-def get_tfidf_vectorizer(X_train):
+def get_tfidf_vectorizer(X_train, model_file_name):
     '''Get tf-idf vectorizer and train matrix'''
+    tfidf_vectorizer_path = f'../xgbmodels/{model_file_name}_vectorizer.pkl'
     tfidf_vectorizer = TfidfVectorizer()
     print(X_train.shape)
     tfidfsparse_matirx_train = tfidf_vectorizer.fit_transform(X_train['new_cleaned_data'])
+    with open(tfidf_vectorizer_path, 'wb') as f:
+        pickle.dump(tfidf_vectorizer, f) # save tfidf_vector
+    with open(tfidf_vectorizer_path, 'rb') as f:
+        tfidf_vectorizer = pickle.load(f) # load tfidf_vector
     print("Tfidf vecotrized generated", tfidfsparse_matirx_train.shape)
     return tfidf_vectorizer, tfidfsparse_matirx_train
 
-def get_matrices(tfidf_vectorizer, X_test):
+def get_matrices(X_test, model_file_name):
     '''Test matrix for evaluation'''
     print(X_test.shape)
+    tfidf_vectorizer_path = f'../xgbmodels/{model_file_name}_vectorizer.pkl'
+    with open(tfidf_vectorizer_path, 'rb') as f:
+        tfidf_vectorizer = pickle.load(f) # load tfidf_vector
     tfidfsparse_matirx = tfidf_vectorizer.transform(X_test['new_cleaned_data'])
     print(tfidfsparse_matirx.shape)
     print("tdidf matrix created")
@@ -79,7 +87,7 @@ def resolve_class_imbalance(tfidfsparse_matirx_train, y_train):
 def model_training(tfidfsparse_matirx_train, y_train_new, tfidfsparse_matirx_test, y_test, model_file_name, model_params):
     '''Model training'''
     print(tfidfsparse_matirx_train.shape, y_train_new.shape, tfidfsparse_matirx_test.shape, y_test.shape)
-    model_path = f'xgbmodels/{model_file_name}'
+    model_path = f'xgbmodels/{model_file_name}.pkl'
     n_estimators = model_params['n_estimators']
     clf = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                     colsample_bynode=1, colsample_bytree=0.9, gamma=0, gpu_id=-1,

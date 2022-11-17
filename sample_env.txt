@@ -1,0 +1,7 @@
+This is not used in the code currently
+Used for AWS CLI terminal configuration
+
+ACCESS_KEY_ID=####################
+SECRET_ACCESS_KEY=####################
+USER_ARN=####################
+ROLE_ARN=####################

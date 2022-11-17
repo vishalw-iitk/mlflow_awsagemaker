@@ -1,44 +1,45 @@
 import pandas as pd
 from utils.main_utils import *
+from config import model_config, mlflow_config
 import mlflow
 
-mlflow.set_experiment('Endo_doctype_clssfify_with_xgb')
+mlflow.set_experiment(mlflow_config.experiment_name)
 
-with mlflow.start_run(run_name = 'XGB model exp') as run:
+with mlflow.start_run(run_name = mlflow_config.run_name) as run:
     '''Load the full dataset'''
-    model_input_file_name = 'df_cleaned_combined.csv'
-    mlflow.log_param('model_input_file_name', model_input_file_name) # log model_input_file_name
-    df = pd.read_csv(f'../{model_input_file_name}')
+    data_input_file_name = model_config.data_input_file_name
+    model_file_name = model_config.model_file_name
+    mlflow.log_param('data_input_file_name', data_input_file_name) # log model_input_file_name
+    df = pd.read_csv(f'../{data_input_file_name}')
     print("Column headers : ", df.columns)
 
     '''Perform data preprocessing'''
-    preprocessed_file_name = 'df_cleaned_combined_new.csv'
+    preprocessed_file_name = model_config.preprocessed_file_name
     mlflow.log_param('preprocessed_file_name', preprocessed_file_name) # log preprocess_file_name
     df = get_preprocessed_data(df, preprocessed_file_name)
 
     '''Train-Test split'''
-    documenttype_section = 'ENDORSEMENT'
+    documenttype_section = model_config.documenttype_section
     mlflow.log_param('documenttype_section',documenttype_section) # log documenttype_section
     X_train, y_train, X_test, y_test = df_spliter_into_train_test(df, documenttype_section)
 
     '''Get tf-idf vectorizer and train matrix'''
-    tfidf_vectorizer, tfidfsparse_matirx_train = get_tfidf_vectorizer(X_train)
+    tfidf_vectorizer, tfidfsparse_matirx_train = get_tfidf_vectorizer(X_train, model_file_name)
 
     '''Test matrix for evaluation'''
-    tfidfsparse_matirx_test = get_matrices(tfidf_vectorizer, X_test)
+    tfidfsparse_matirx_test = get_matrices(X_test, model_file_name)
 
     '''Resolve class imbalance'''
     tfidfsparse_matirx_train, y_train = resolve_class_imbalance(tfidfsparse_matirx_train, y_train)
 
     '''Model training'''
-    model_file_name = 'model3_nov22_1.pkl'
     mlflow.log_param('model_file_name', model_file_name) # log model name
     model_params = {
-        'n_estimators' : 100
+        'n_estimators' : model_config.n_estimators
     }
     mlflow.log_param('num_estimator', model_params['n_estimators']) # log n_estimators
     model = model_training(tfidfsparse_matirx_train, y_train, tfidfsparse_matirx_test, y_test, model_file_name, model_params)
-    mlflow.sklearn.log_model(model, 'model_file') # log model in mlflow
+    mlflow.sklearn.log_model(model, model_config.mlflow_model_name) # log model in mlflow
 
     '''Get model predictions on train and test set'''
     y_pred_train = get_model_predictions(model, tfidfsparse_matirx_train)
